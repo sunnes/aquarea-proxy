@@ -1,0 +1,16 @@
+# Minimal Prometheus config that scrapes the Aquarea proxy.
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: aquarea
+    metrics_path: /metrics
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    # The proxy's HTTP API needs Basic auth (user "aquarea", password = DEVICE_PASSWORD from secrets.env).
+    # The password is read from a gitignored file, never written here (see monitoring/README.md).
+    basic_auth:
+      username: aquarea
+      password_file: /etc/prometheus/aquarea_password
+    static_configs:
+      - targets: ["192.0.2.10:80"]     # replace with the proxy's IP (reserve it in the router's DHCP)

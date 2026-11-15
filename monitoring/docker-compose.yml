@@ -1,0 +1,18 @@
+# Optional: a Prometheus just for the Aquarea proxy. If you already run Prometheus, only copy the
+# scrape job from prometheus.yml into your own configuration instead.
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=1y
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./aquarea_password:/etc/prometheus/aquarea_password:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+
+volumes:
+  prometheus-data:

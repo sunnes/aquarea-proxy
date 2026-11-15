@@ -1,0 +1,28 @@
+title = "aquarea"
+
+[extend]
+useDefault = true
+
+# Hard-coded passwords in code or config (the password belongs in secrets.env).
+[[rules]]
+id = "aquarea-hardcoded-password"
+description = "Hard-coded password"
+regex = '''(?i)(password|passwd|pass|auth)[ \t]*[:=][ \t]*["']?[A-Za-z0-9_!@#$%^&*.-]{6,}["']?'''
+keywords = ["pass", "auth"]
+  [[rules.allowlists]]
+  regexTarget = "line"
+  regexes = ['''(?i)(change-me|password_file|secrets\.env|\$\{|\$[A-Z_]+|=[ \t]*DEVICE_PASSWORD[ \t]*;|API_PASS|wifi_password|AP_password|Serial\.print|\.get\(|e\.g\.)''']
+
+# Internal network addresses do not belong in a public repo (use 192.0.2.x documentation addresses).
+[[rules]]
+id = "aquarea-private-ip"
+description = "Private network IP address"
+regex = '''\b(192\.168|10\.\d{1,3}|172\.(1[6-9]|2\d|3[01]))\.\d{1,3}\.\d{1,3}\b'''
+keywords = ["192.168", "10.", "172."]
+  [[rules.allowlists]]
+  # the setup access point address is a fixed constant of the firmware (src/main.cpp)
+  regexTarget = "line"
+  regexes = ['''10\.1\.1\.1/wifi|address `10\.1\.1\.1`''']
+
+[allowlist]
+paths = ['''^secrets\.env$''', '''^\.pio/''']

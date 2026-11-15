@@ -1,0 +1,38 @@
+# Optional Prometheus alert rules for the Aquarea proxy.
+# Add to prometheus.yml:   rule_files: ["alerts.yml"]
+groups:
+  - name: aquarea
+    rules:
+      - alert: AquareaProxyDown
+        expr: up{job="aquarea"} == 0
+        for: 2m
+        annotations:
+          summary: "The Aquarea proxy does not answer scrapes (Wi-Fi, power, or it crashed)."
+
+      - alert: AquareaNoBusData
+        expr: aquarea_data_age_seconds > 60
+        for: 1m
+        annotations:
+          summary: "The proxy is up but no fresh values came from the heat pump for over a minute."
+
+      - alert: AquareaHeatPumpError
+        expr: aquarea_error_code{kind="current"} != 0
+        for: 1m
+        annotations:
+          summary: "The heat pump reports error code {{ $value }} (156 = H76 remote communication, 38 = H72)."
+
+      - alert: AquareaBusProblems
+        expr: increase(aquarea_bus_naks_total[15m]) + increase(aquarea_bus_noreply_total[15m]) + increase(aquarea_bus_unmatched_total[15m]) > 5
+        annotations:
+          summary: "More than 5 NAK / unanswered / unmatched exchanges in 15 minutes: check the panel for H76."
+
+      - alert: AquareaProxyRebooted
+        expr: changes(aquarea_uptime_seconds[10m]) > 0 and aquarea_uptime_seconds < 600
+        annotations:
+          summary: "The proxy rebooted (the panel link is interrupted while it does)."
+
+      - alert: AquareaLowMemory
+        expr: aquarea_free_heap_bytes < 12000
+        for: 10m
+        annotations:
+          summary: "Free heap is low ({{ $value }} bytes): possible memory leak."

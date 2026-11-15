@@ -1,0 +1,11 @@
+# Grafana provisioning file (e.g. grafana/provisioning/datasources/prometheus.yml) for the Prometheus
+# above. Adjust the url so Grafana can reach Prometheus (container name, host IP, ...).
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: false

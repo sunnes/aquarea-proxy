@@ -35,11 +35,12 @@ static String modeName() {
 }
 
 static void sendResult(const Control::Result &r) {
-  char buf[200];
+  char buf[256];
   snprintf(buf, sizeof(buf),
-           "{\"ok\":%s,\"message\":\"%s\",\"reg\":%u,\"sent\":%u,\"reply\":%u}\n",
-           r.ok ? "true" : "false", r.message, r.reg, r.sent, r.reply);
-  srv->send(r.ok ? 200 : 502, "application/json", buf);
+           "{\"ok\":%s,\"refused\":%s,\"message\":\"%s\",\"reg\":%u,\"sent\":%u,\"reply\":%u}\n",
+           r.ok ? "true" : "false", r.refused ? "true" : "false", r.message, r.reg, r.sent, r.reply);
+  // 409: a safety rule refused the command and nothing was sent; 502: the bus exchange failed.
+  srv->send(r.ok ? 200 : (r.refused ? 409 : 502), "application/json", buf);
 }
 
 static void handleState() {

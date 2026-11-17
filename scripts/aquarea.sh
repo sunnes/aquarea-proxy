@@ -129,7 +129,8 @@ cmd_change() {   # cmd_change "<question>" METHOD PATH
   confirm "$1" || { echo "cancelled"; return 1; }
   api POST "$3"; local rc=$?
   pretty "$API_BODY"
-  [ $rc -eq 0 ] || echo "FAILED (HTTP $API_CODE)" >&2
+  if [ "$API_CODE" = 409 ]; then echo "REFUSED by a safety rule, nothing was sent (see message)" >&2
+  elif [ $rc -ne 0 ]; then echo "FAILED (HTTP $API_CODE)" >&2; fi
   return $rc
 }
 
@@ -188,7 +189,8 @@ cmd_test_power() {
   else
     api POST "/api/power?on=0"; check "power OFF accepted: $(tr -d '\n' <<<"$API_BODY")" $?
     wait_power off; check "status flag shows OFF" $?
-    confirm "Turn heating ON again?" && { api POST "/api/power?on=1"; check "power ON accepted: $(tr -d '\n' <<<"$API_BODY")" $?; wait_power on; check "status flag shows ON" $?; }
+    # The proxy refuses power ON for 3 minutes after its own power OFF (compressor restart delay).
+    confirm "Turn heating ON again (waits 3 min for the compressor restart delay)?" && { echo "        waiting 185 s"; [ "$DRY" = 1 ] || sleep 185; api POST "/api/power?on=1"; check "power ON accepted: $(tr -d '\n' <<<"$API_BODY")" $?; wait_power on; check "status flag shows ON" $?; }
   fi
   echo "Result: $PASS_N passed, $FAIL_N failed"
   [ "$FAIL_N" -eq 0 ]

@@ -236,7 +236,27 @@ Two details about settings:
 - `settings -r` reads them from the heat pump first. It never reads the heat curve shift (register 138),
   because on that register a request with value 0 is a write that resets the shift to 0.
 - Only keys in the whitelist can be changed, each within its own limits (`src/control.cpp`). There is
-  deliberately no "write any register".
+  deliberately no "write any register". The limits are the control panel ranges from the Panasonic
+  service manual for WH-SDC03E3E5 / WH-SDC05E3E5 (order no. PAPAMY1209153CE):
+
+  | key | meaning | range |
+  |---|---|---|
+  | `low_outdoor`, `high_outdoor` | heating curve outdoor points | -15..15 C, low below high |
+  | `flow_low`, `flow_high` | flow temperature at those points | 25..55 C, `flow_low` >= `flow_high` |
+  | `heat_off_outdoor` | heating stops above this outdoor temperature | 5..35 C |
+  | `backup_on` | backup heater allowed below this outdoor temperature | -15..20 C |
+  | `cool_set` | cooling flow temperature | 5..20 C |
+  | `tank_set` | hot water target (above 51 C only with the tank booster heater) | 40..75 C |
+  | `heat_shift` | heat curve shift | -5..5 C |
+
+- Timing guards protect the compressor and the error lockout (service manual 13.1.1 and 16.4). A refused
+  command sends nothing and answers HTTP 409 with `"refused":true` and the seconds to wait:
+  - power ON is refused for 3 minutes after a power OFF sent through the proxy (the compressor does not
+    restart sooner anyway); power OFF is never refused;
+  - while the heat pump is on, mode changes must be at least 3 minutes apart;
+  - `reset_error` works once per 30 minutes, so a script cannot hide a repeating protection fault
+    (F16, F20, F23, ... lock out only after several occurrences within 20-30 minutes). H76, the panel
+    link error, is exempt. H62 (water flow) needs a power cycle of the indoor unit; a reset does not clear it.
 
 Monitoring (Prometheus, Grafana, alerts): see [monitoring/README.md](monitoring/README.md).
 
@@ -249,8 +269,8 @@ Monitoring (Prometheus, Grafana, alerts): see [monitoring/README.md](monitoring/
 - The `/wifi` setup page asks for the same login as the API (user `aquarea`, `DEVICE_PASSWORD`), but over plain
   HTTP like everything else here, so the Wi-Fi password you enter travels unencrypted on the local network.
 - The firmware image contains `DEVICE_PASSWORD`; treat built binaries like secrets.
-- Register meanings come from observing a single installation; settings limits are conservative guesses.
-  Check them against your unit's manual before widening them.
+- Register meanings come from observing a single installation. Settings limits follow the service
+  manual for WH-SDC03/05E3E5; check them against your own unit's manual before widening them.
 
 ## License
 
